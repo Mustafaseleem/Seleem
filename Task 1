@@ -1,0 +1,44 @@
+import os
+import pandas as pd
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
+
+# Ensure your Kaggle API credentials are configured
+os.environ['KAGGLE_USERNAME'] = 'your_kaggle_username'
+os.environ['KAGGLE_KEY'] = 'your_kaggle_api_key'
+
+# Define the Kaggle dataset to download (example dataset)
+dataset_name = 'zillow/zecon'  # Example: 'zillow/zecon'
+
+# Download the dataset using Kaggle API
+os.system(f'kaggle datasets download -d {dataset_name} -p ./data')
+
+# Unzip the downloaded file
+os.system('unzip "./data/*.zip" -d ./data')
+
+# Load the dataset (replace 'file.csv' with the actual file name)
+file_path = './data/State_time_series.csv'  # Example file path
+data = pd.read_csv(file_path)
+
+# Display the first few rows of the raw data
+print("Raw Data:")
+print(data.head())
+
+# Handle missing values using SimpleImputer
+imputer = SimpleImputer(strategy='mean')
+data_imputed = imputer.fit_transform(data.select_dtypes(include=[float, int]))
+
+# Standardize the data
+scaler = StandardScaler()
+data_standardized = scaler.fit_transform(data_imputed)
+
+# Normalize the data
+normalizer = MinMaxScaler()
+data_normalized = normalizer.fit_transform(data_standardized)
+
+# Convert the normalized data back to a DataFrame
+data_preprocessed = pd.DataFrame(data_normalized, columns=data.select_dtypes(include=[float, int]).columns)
+
+# Display the first few rows of the preprocessed data
+print("\nPreprocessed Data:")
+print(data_preprocessed.head())
