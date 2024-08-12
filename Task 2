@@ -1,0 +1,71 @@
+import pandas as pd
+from sklearn.impute import SimpleImputer
+from sklearn.preprocessing import StandardScaler, MinMaxScaler, OneHotEncoder
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.decomposition import PCA
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.feature_selection import SelectKBest, chi2
+from sklearn.metrics import accuracy_score
+
+# Load the dataset
+# Replace 'your_dataset.csv' with the actual dataset file path
+df = pd.read_csv('your_dataset.csv')
+
+# Separate features and target variable
+# Replace 'target_column' with the actual target column name
+X = df.drop('target_column', axis=1)
+y = df['target_column']
+
+# Splitting data into numerical and categorical features
+numerical_features = X.select_dtypes(include=['int64', 'float64']).columns
+categorical_features = X.select_dtypes(include=['object']).columns
+
+# Preprocessing for numerical data
+numerical_transformer = Pipeline(steps=[
+    ('imputer', SimpleImputer(strategy='mean')),  # Filling missing values with mean
+    ('scaler', StandardScaler())  # Standardizing numerical features
+])
+
+# Preprocessing for categorical data
+categorical_transformer = Pipeline(steps=[
+    ('imputer', SimpleImputer(strategy='most_frequent')),  # Filling missing values with the most frequent value
+    ('onehot', OneHotEncoder(handle_unknown='ignore'))  # Encoding categorical variables with OneHotEncoder
+])
+
+# Combining numerical and categorical transformers
+preprocessor = ColumnTransformer(
+    transformers=[
+        ('num', numerical_transformer, numerical_features),
+        ('cat', categorical_transformer, categorical_features)
+    ])
+
+# Adding PCA for dimensionality reduction
+# PCA helps in reducing the dimensionality by projecting data onto fewer dimensions
+pca = PCA(n_components=5)
+
+# Optional: Adding feature selection
+# SelectKBest selects the top k features that have the strongest relationship with the output
+feature_selector = SelectKBest(chi2, k=10)
+
+# Creating a final pipeline
+pipeline = Pipeline(steps=[
+    ('preprocessor', preprocessor),
+    ('dim_reduction', pca),  # Apply PCA
+    ('feature_selection', feature_selector),  # Apply feature selection (optional)
+    ('classifier', RandomForestClassifier())  # RandomForest as a classifier
+])
+
+# Splitting data into training and test sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Fitting the pipeline on the training data
+pipeline.fit(X_train, y_train)
+
+# Predicting on the test data
+y_pred = pipeline.predict(X_test)
+
+# Evaluating the accuracy
+accuracy = accuracy_score(y_test, y_pred)
+print(f'Model Accuracy: {accuracy:.2f}')
